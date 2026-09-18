@@ -12,6 +12,9 @@ import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
+PHOTO_DIR = ""   # путь к фото видов (ставит android_host)
+
+
 HTML = """<!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -96,6 +99,8 @@ async function search() {
   }
   $('results').innerHTML = d.candidates.map((c,i) =>
     '<div class="res ' + d.zone + '">' +
+    (c.kind === 'image' && c.species ?
+      '<img src="/api/photo?sp=' + encodeURIComponent(c.species) + '" style="width:100%;max-height:180px;object-fit:cover;border-radius:8px;margin-bottom:6px" onerror="this.style.display=\'none\'">' : '') +
     '<div class="answer">' + esc(c.text.slice(0, 260)) + (c.text.length>260?'…':'') + '</div>' +
     '<div class="meta"><span class="badge">conf ' + Math.round(c.conf*100) + '%</span>' +
     '<span class="badge">' + d.zone + '</span>' + esc(c.citation) + '</div>' +
@@ -217,8 +222,29 @@ class Handler(BaseHTTPRequestHandler):
                 "extracted": ext,
                 "candidates": [
                     {"idx": c.idx, "text": c.text, "conf": c.conf,
-                     "citation": sys_.citation(c)} for c in res.candidates],
+                     "citation": sys_.citation(c),
+                     "kind": (sys_.memory.meta[c.idx] or {}).get("kind"),
+                     "species": (sys_.memory.meta[c.idx] or {}).get("species")}
+                    for c in res.candidates],
             })
+        if u.path == "/api/photo":
+            import os as _os
+            from urllib.parse import parse_qs, unquote
+            sp = unquote(parse_qs(u.query).get("sp", [""])[0])
+            safe = "".join(ch for ch in sp if ch.isalnum() or ch in "-_")
+            p = _os.path.join(PHOTO_DIR, safe + ".jpg") if PHOTO_DIR else ""
+            if PHOTO_DIR and _os.path.exists(p):
+                with open(p, "rb") as f:
+                    img = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "image/jpeg")
+                self.send_header("Cache-Control", "no-store")
+                self.send_header("Content-Length", str(len(img)))
+                self.end_headers()
+                self.wfile.write(img)
+            else:
+                self._send({"error": "no photo"}, 404)
+            return
         if u.path == "/api/sources":
             return self._send(Handler.system.memory.sources())
         if u.path == "/api/species":
