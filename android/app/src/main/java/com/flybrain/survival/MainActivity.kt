@@ -51,6 +51,21 @@ class MainActivity : Activity() {
             }
         }
         setContentView(web)
+        // Серверу нужно 3–10 с (распаковка состояния из assets + импорт
+        // модулей). WebView перезагружает страницу до победного, максимум
+        // ~30 попыток с интервалом 1 с; если сервер так и не поднялся —
+        // аварийный экран android_host покажет traceback.
+        web.webViewClient = object : WebViewClient() {
+            private var attempts = 0
+            override fun onReceivedError(
+                v: WebView, code: Int, desc: String, url: String
+            ) {
+                if (attempts < 30 && url.contains("127.0.0.1")) {
+                    attempts++
+                    v.postDelayed({ v.reload() }, 1000)
+                }
+            }
+        }
         web.loadUrl("http://127.0.0.1:$PORT")
     }
 
