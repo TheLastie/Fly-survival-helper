@@ -33,6 +33,9 @@ jobs:
         with:
           gradle-version: "8.10"
 
+      - name: Синхронизация Python payload (root -> android)
+        run: for f in *.py; do cp "$f" android/app/src/main/python/flybrain/; done
+
       - name: Собрать debug APK (${{ matrix.flavor }})
         run: cd android && gradle assemble${{ matrix.flavor }}Debug --stacktrace
 
