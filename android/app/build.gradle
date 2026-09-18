@@ -1,0 +1,33 @@
+plugins {
+    id 'com.android.application'
+    id 'com.chaquo.python'
+}
+android {
+    namespace 'com.flybrain.survival'
+    compileSdk 34
+    defaultConfig {
+        applicationId "com.flybrain.survival"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "0.1"
+        ndk { abiFilters "arm64-v8a" }   // только arm64: Nothing Phone 2a и современные
+        python {
+            version "3.11"
+            pip {
+                install "numpy"
+                install "pillow"
+                // onnxruntime: если chaquopy-индекс его не отдаст, см.
+                // README_ANDROID.md — вариант B (нативный AAR через pyjnius)
+                install "onnxruntime"
+            }
+        }
+        sourceSets { main { python.srcDir "src/main/python" } }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            // базу видов (папки *_db) кладите в app/src/main/assets/dbs/
+        }
+    }
+}

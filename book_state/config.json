@@ -1,0 +1,1 @@
+{"n_kc": 2000, "sparsity": 0.05, "d_model": 512, "lr_pos": 0.3, "lr_neg_scale": 1.0, "decay": 0.0, "soft_coef": 0.9, "topk_mem": 3, "rerank_pool": 30, "rm3_enabled": true, "rm3_n": 8, "rm3_w": 0.4, "theta_low": 0.147, "theta_conf": 0.35, "theta_mid": 0.75, "delta_margin": 0.02, "calib_a": 7.55, "calib_b": -2.28, "calib_a2": 8.44, "calib_b2": -2.56, "seed": 42}

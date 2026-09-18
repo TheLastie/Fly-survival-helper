@@ -1,0 +1,37 @@
+# Сборка APK в облаке: закоммитьте проект на GitHub — APK появится
+# во вкладке Actions как артефакт. Ничего локально не устанавливать.
+name: build-apk
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:   # кнопка "Run workflow" в веб-интерфейсе GitHub
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: SDK + platform-tools
+        uses: android-actions/setup-android@v3
+
+      - name: Принять лицензии SDK
+        run: yes | sdkmanager --licenses > /dev/null
+
+      - name: Платформа android-34
+        run: sdkmanager "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Собрать debug APK
+        run: cd android && chmod +x gradlew 2>/dev/null; ./gradlew assembleDebug --stacktrace
+
+      - name: Выложить APK как артефакт
+        uses: actions/upload-artifact@v4
+        with:
+          name: flybrain-survival-debug
+          path: android/app/build/outputs/apk/debug/*.apk
