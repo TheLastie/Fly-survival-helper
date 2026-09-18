@@ -200,7 +200,7 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
     def _send(self, obj, code=200, ctype="application/json; charset=utf-8"):
-        body = (HTML if ctype.startswith("text/html") else json.dumps(
+        body = (HTML.replace("{BUILD}", BUILD) if ctype.startswith("text/html") else json.dumps(
             obj, ensure_ascii=False)).encode("utf-8")
         self.send_response(code)
         self.send_header("Content-Type", ctype)
