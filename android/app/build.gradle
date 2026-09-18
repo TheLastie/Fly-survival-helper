@@ -43,6 +43,7 @@ android {
 }
 
 dependencies {
-    // BISECT B1: onnxruntime AAR отключён. Для зрения раскомментировать:
-    // implementation "com.microsoft.onnxruntime:onnxruntime-android:1.30.0"
+    // зрение в APK: нативный onnxruntime-android (мост через встроенный
+    // java-мост Chaquopy, см. image_embedder._run_jni)
+    implementation "com.microsoft.onnxruntime:onnxruntime-android:1.30.0"
 }
