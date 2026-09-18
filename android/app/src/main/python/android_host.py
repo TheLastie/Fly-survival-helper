@@ -36,19 +36,9 @@ def _copy_tree_assets(mgr, src, dst):
 
 
 def _setup_state(files_dir):
-    """assets/state -> filesDir/state (готовое состояние) или None."""
-    from com.chaquo.python import Android   # API Chaquopy (не pyjnius)
-    mgr = Android.context.getAssets()
+    """Состояние уже скопировано Kotlin-ом в filesDir/state."""
     dst = os.path.join(files_dir, "state")
-    if os.path.exists(os.path.join(dst, "manifest.json")):
-        return dst
-    try:
-        if "state" in mgr.list(""):
-            _copy_tree_assets(mgr, "state", dst)
-            return dst
-    except Exception:
-        pass
-    return None
+    return dst if os.path.exists(os.path.join(dst, "manifest.json")) else None
 
 
 def _setup_llm(files_dir):

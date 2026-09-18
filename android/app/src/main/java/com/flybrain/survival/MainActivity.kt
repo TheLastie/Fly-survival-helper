@@ -37,6 +37,27 @@ class MainActivity : Activity() {
         lay.addView(status)
         setContentView(lay)
 
+        // Состояние копируем КОТЛИНОМ (родной AssetManager, без мостов
+        // Python<->Java) — Python получает готовые файлы в filesDir.
+        try {
+            val stateDir = java.io.File(filesDir, "state")
+            if (!java.io.File(stateDir, "manifest.json").exists()) {
+                fun copyRec(srcPath: String, dst: java.io.File) {
+                    val entries = assets.list(srcPath) ?: return
+                    if (entries.isEmpty()) {
+                        dst.parentFile?.mkdirs()
+                        assets.open(srcPath).use { input ->
+                            java.io.FileOutputStream(dst).use { output -> input.copyTo(output) }
+                        }
+                    } else {
+                        dst.mkdirs()
+                        for (e in entries) copyRec("$srcPath/$e", java.io.File(dst, e))
+                    }
+                }
+                copyRec("state", stateDir)
+            }
+        } catch (_: Exception) { }
+
         // Python-рантайм в фоновом потоке: UI не блокируется, нет ANR.
         // Бисекция завершена: экран жив -> краш был отсутствующим Kotlin-
         // классом (fixed). Включаем полный контур.
