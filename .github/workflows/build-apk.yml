@@ -25,6 +25,11 @@ jobs:
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0"
 
+      - name: Gradle 8.10 (Chaquopy несовместим с Gradle 9)
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10"
+
       - name: Собрать debug APK
         run: cd android && gradle assembleDebug --stacktrace
 
