@@ -35,7 +35,10 @@ class ImageEmbedder:
     def _run_jni(self, arr_nchw: np.ndarray) -> np.ndarray:
         """Инференс через onnxruntime-android Java API (pyjnius).
         arr: (1,3,224,224) float32 -> (576,) features."""
-        from jnius import autoclass
+        try:
+            from jnius import autoclass
+        except ImportError:
+            from java import autoclass   # встроенный мост Chaquopy
         OnnxTensor = autoclass("ai.onnxruntime.OnnxTensor")
         HashMap = autoclass("java.util.HashMap")
         FloatBuffer = autoclass("java.nio.FloatBuffer")
@@ -51,7 +54,6 @@ class ImageEmbedder:
         out = res.get(0).getValue()          # FloatBuffer
         n = out.remaining()
         import jnius
-        arr = out  # читаем через get() по одному (getFloatBuffer deprecated)
         result = np.empty(n, dtype=np.float32)
         for i in range(n):
             result[i] = arr.get(i)
@@ -101,7 +103,10 @@ class ImageEmbedder:
         # приоритет 2: нативный onnxruntime-android AAR через pyjnius
         # (путь APK: AAR в gradle-зависимостях, pip-пакет onnxruntime не нужен)
         try:
-            from jnius import autoclass
+            try:
+                from jnius import autoclass
+            except ImportError:
+                from java import autoclass   # встроенный мост Chaquopy
             OrtEnvironment = autoclass("ai.onnxruntime.OrtEnvironment")
             self._ort_env = OrtEnvironment.getEnvironment()
             SessionOptions = autoclass("ai.onnxruntime.OrtSession$SessionOptions")

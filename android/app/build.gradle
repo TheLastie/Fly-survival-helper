@@ -17,9 +17,8 @@ android {
             pip {
                 install "numpy"
                 install "pillow"
-                install "pyjnius"
-                // onnxruntime: нет chaquopy-колеса -> нативный AAR (dependencies)
-                // + pyjnius-мост (image_embedder._run_jni)
+                // onnxruntime: нет chaquopy-колеса -> нативный AAR (dependencies);
+                // Java-мост — ВСТРОЕННЫЙ модуль java Chaquopy (pyjnius не нужен)
             }
         }
     }
