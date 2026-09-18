@@ -4,6 +4,7 @@
     <application
         android:label="FlyBrain Survival"
         android:usesCleartextTraffic="true"
+        android:extractNativeLibs="true"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:allowBackup="true">
         <activity android:name=".MainActivity" android:exported="true"

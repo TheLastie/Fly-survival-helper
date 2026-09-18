@@ -21,10 +21,19 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Python-рантайм + наш сервер в фоновом потоке
-        if (!Python.isStarted()) Python.start(AndroidPlatform(this))
-        Thread {
-            Python.getInstance().getModule("android_host").callAttr("start", filesDir.absolutePath)
-        }.start()
+        try {
+            if (!Python.isStarted()) Python.start(AndroidPlatform(this))
+            Thread {
+                try {
+                    Python.getInstance().getModule("android_host")
+                        .callAttr("start", filesDir.absolutePath)
+                } catch (t: Throwable) {
+                    runOnUiThread { showError("Python: " + t.message) }
+                }
+            }.start()
+        } catch (t: Throwable) {
+            showError("Chaquopy: " + t.message)
+        }
 
         val web = WebView(this)
         web.settings.javaScriptEnabled = true
@@ -52,6 +61,14 @@ class MainActivity : Activity() {
                 WebChromeClient.FileChooserParams.parseResult(res, data))
             fileCallback = null
         }
+    }
+
+    private fun showError(msg: String) {
+        android.app.AlertDialog.Builder(this)
+            .setTitle("FlyBrain: ошибка запуска")
+            .setMessage(msg + "\n\nДетали будут на экране приложения.")
+            .setPositiveButton("OK", null)
+            .show()
     }
 
     override fun onDestroy() {
