@@ -369,3 +369,14 @@ github.com/TheLastie/Fly-survival-helper → Actions → build-apk → success.
 зрение деградирует без ошибок (карточки индексируются, recognize() честно
 сообщает). Проверено содержимое: Chaquopy, assets/state, ONNX-модель.
 app-debug.apk: /mnt/agents/output/app-debug.apk
+
+## APK v3: аудит содержимого + две слепые правки краша
+
+Аудит app-debug.apk (36 МБ): app.imy содержит ВЕСЬ python-код
+(android_host + flybrain/*, 93 КБ), assets/state/* (полевое состояние),
+assets/models/mobilenet_v3_small.onnx, lib/arm64-v8a/libpython3.11.so.
+Состав корректен. Слепые правки причины «крашится при запуске»:
+(1) extractNativeLibs=true (Chaquopy не грузил .so);
+(2) retry-цикл WebView (гонка: серверу 3-10 с, WebView — ERR page,
+выглядело как краш). При падении Python приложение показывает traceback
+на экране (crash-server) — дальнейшая отладка только по тексту с экрана.
