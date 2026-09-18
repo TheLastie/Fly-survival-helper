@@ -17,8 +17,9 @@ android {
             pip {
                 install "numpy"
                 install "pillow"
-                // onnxruntime в chaquopy-индексе отсутствует (android-колесо):
-                // APK v1 — текстовый режим; зрение — вариант B из README_ANDROID.md
+                install "pyjnius"
+                // onnxruntime: нет chaquopy-колеса -> нативный AAR (dependencies)
+                // + pyjnius-мост (image_embedder._run_jni)
             }
         }
     }
@@ -28,4 +29,7 @@ android {
             // базу видов (папки *_db) кладите в app/src/main/assets/dbs/
         }
     }
+
+    // зрение в APK: нативный onnxruntime-android (мост через pyjnius)
+    implementation "com.microsoft.onnxruntime:onnxruntime-android:1.19.0"
 }

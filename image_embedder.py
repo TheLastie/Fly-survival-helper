@@ -32,6 +32,31 @@ class ImageEmbedder:
         q, _ = np.linalg.qr(g)          # ортонормирование -> сохранение метрик
         return q.astype(np.float32)
 
+    def _run_jni(self, arr_nchw: np.ndarray) -> np.ndarray:
+        """Инференс через onnxruntime-android Java API (pyjnius).
+        arr: (1,3,224,224) float32 -> (576,) features."""
+        from jnius import autoclass
+        OnnxTensor = autoclass("ai.onnxruntime.OnnxTensor")
+        HashMap = autoclass("java.util.HashMap")
+        FloatBuffer = autoclass("java.nio.FloatBuffer")
+        flat = arr_nchw.astype(np.float32).ravel().tolist()
+        fb = FloatBuffer.allocate(len(flat))
+        for v in flat:
+            fb.put(v)
+        fb.flip()
+        t = OnnxTensor.createTensor(self._ort_env, fb, [1, 3, 224, 224])
+        inputs = HashMap()
+        inputs.put("input", t)
+        res = self._ort_sess.run(inputs)
+        out = res.get(0).getValue()          # FloatBuffer
+        n = out.remaining()
+        import jnius
+        arr = out  # читаем через get() по одному (getFloatBuffer deprecated)
+        result = np.empty(n, dtype=np.float32)
+        for i in range(n):
+            result[i] = arr.get(i)
+        return result
+
     # ---------- препроцессинг (PIL + numpy, без torch) ----------
     _MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
     _STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
@@ -73,14 +98,26 @@ class ImageEmbedder:
                 return
             except ImportError:
                 pass  # fallback на torch
-        self._onnx = False
+        # приоритет 2: нативный onnxruntime-android AAR через pyjnius
+        # (путь APK: AAR в gradle-зависимостях, pip-пакет onnxruntime не нужен)
+        try:
+            from jnius import autoclass
+            OrtEnvironment = autoclass("ai.onnxruntime.OrtEnvironment")
+            self._ort_env = OrtEnvironment.getEnvironment()
+            SessionOptions = autoclass("ai.onnxruntime.OrtSession$SessionOptions")
+            self._ort_sess = self._ort_env.createSession(onnx_path, SessionOptions())
+            self._jni = True
+            self._model = "onnx-jni"
+            return
+        except Exception:
+            self._jni = False
         try:
             import torch
             from torchvision.models import (mobilenet_v3_small,
                                             MobileNet_V3_Small_Weights)
         except ImportError:
             raise RuntimeError(
-                "зрение недоступно: установите onnxruntime или torch")
+                "зрение недоступно: onnxruntime (py/jni), torch")
         w = MobileNet_V3_Small_Weights.DEFAULT
         # оффлайн-упаковка: веса рядом с проектом имеют приоритет
         local = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -107,6 +144,8 @@ class ImageEmbedder:
         if getattr(self, "_onnx", False):
             f = self._session.run(
                 None, {self._in_name: self._preprocess(img)})[0][0]
+        elif getattr(self, "_jni", False):
+            f = self._run_jni(self._preprocess(img))
         else:
             x = self._tf(img).unsqueeze(0)
             with self._torch.no_grad():
@@ -143,6 +182,10 @@ class ImageEmbedder:
                     None, {self._in_name: np.concatenate(
                         [self._preprocess(Image.open(p).convert("RGB"))
                          for p in chunk])})[0]
+            elif getattr(self, "_jni", False):
+                f = np.concatenate(
+                    [self._run_jni(self._preprocess(Image.open(p).convert("RGB")))
+                     for p in chunk])
             else:
                 batch = [self._tf(Image.open(p).convert("RGB"))
                          for p in chunk]
