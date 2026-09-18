@@ -37,8 +37,8 @@ def _copy_tree_assets(mgr, src, dst):
 
 def _setup_state(files_dir):
     """assets/state -> filesDir/state (готовое состояние) или None."""
-    import android
-    mgr = android.context.getAssets()
+    from com.chaquo.python import Android   # API Chaquopy (не pyjnius)
+    mgr = Android.context.getAssets()
     dst = os.path.join(files_dir, "state")
     if os.path.exists(os.path.join(dst, "manifest.json")):
         return dst
