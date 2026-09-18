@@ -65,6 +65,16 @@ class MainActivity : Activity() {
                     java.io.FileOutputStream(onnxOut).use { output -> input.copyTo(output) }
                 }
             }
+            // фото видов для показа в результатах
+            val spDir = java.io.File(filesDir, "species_photos")
+            if (!spDir.exists()) {
+                spDir.mkdirs()
+                for (name in assets.list("species_photos") ?: emptyArray()) {
+                    assets.open("species_photos/$name").use { input ->
+                        java.io.FileOutputStream(java.io.File(spDir, name)).use { output -> input.copyTo(output) }
+                    }
+                }
+            }
         } catch (_: Exception) { }
 
         // Python-рантайм в фоновом потоке: UI не блокируется, нет ANR.
