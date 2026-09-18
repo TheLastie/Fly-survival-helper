@@ -26,10 +26,12 @@ android {
     buildTypes {
         release {
             minifyEnabled false
-            // базу видов (папки *_db) кладите в app/src/main/assets/dbs/
         }
     }
+}
 
-    // зрение в APK: нативный onnxruntime-android (мост через pyjnius)
+dependencies {
+    // зрение в APK: нативный onnxruntime-android (мост через pyjnius,
+    // см. image_embedder._run_jni). Базы видов — в app/src/main/assets/state/.
     implementation "com.microsoft.onnxruntime:onnxruntime-android:1.19.0"
 }
