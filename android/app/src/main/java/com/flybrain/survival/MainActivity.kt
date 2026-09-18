@@ -1,14 +1,18 @@
 package com.flybrain.survival
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Intent
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
+import android.view.Gravity
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.app.Activity
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
 
@@ -16,30 +20,55 @@ class MainActivity : Activity() {
     private var fileCallback: ValueCallback<Array<Uri>>? = null
     private val FILE_REQ = 1001
     private val PORT = 8321
+    private var status: TextView? = null
 
-    @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Python-рантайм + наш сервер в фоновом потоке
-        try {
-            if (!Python.isStarted()) Python.start(AndroidPlatform(this))
-            Thread {
-                try {
-                    Python.getInstance().getModule("android_host")
-                        .callAttr("start", filesDir.absolutePath)
-                } catch (t: Throwable) {
-                    runOnUiThread { showError("Python: " + t.message) }
-                }
-            }.start()
-        } catch (t: Throwable) {
-            showError("Chaquopy: " + t.message)
-        }
+        // Экран загрузки: убирает и ANR, и «белый экран = краш»
+        val lay = LinearLayout(this)
+        lay.orientation = LinearLayout.VERTICAL
+        lay.gravity = Gravity.CENTER
+        lay.setBackgroundColor(Color.rgb(20, 23, 28))
+        status = TextView(this)
+        status!!.text = "FlyBrain Survival\n\nзагрузка базы (10–20 с при первом запуске)…"
+        status!!.setTextColor(Color.rgb(223, 229, 236))
+        status!!.textSize = 16f
+        status!!.gravity = Gravity.CENTER
+        lay.addView(status)
+        setContentView(lay)
 
+        // Python-рантайм — в ФОНОВОМ потоке: UI не блокируется, нет ANR
+        Thread {
+            try {
+                if (!Python.isStarted()) Python.start(AndroidPlatform(this))
+                status?.post { status?.text = "индексация и старт сервера…" }
+                Python.getInstance().getModule("android_host")
+                    .callAttr("start", filesDir.absolutePath)
+                status?.post { showWeb() }
+            } catch (t: Throwable) {
+                status?.post {
+                    status?.text = ("Ошибка запуска: " + t.message
+                        + "\n\nДетали — на экране приложения.")
+                }
+            }
+        }.start()
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private fun showWeb() {
         val web = WebView(this)
         web.settings.javaScriptEnabled = true
         web.settings.allowFileAccess = false
-        web.webViewClient = WebViewClient()
-        // выбор фото/камеры из <input type=file> Web-UI
+        // Сервер уже поднят, но перестрахуемся: retry до 30 раз
+        web.webViewClient = object : WebViewClient() {
+            private var attempts = 0
+            override fun onReceivedError(v: WebView, code: Int, desc: String, url: String) {
+                if (attempts < 30 && url.contains("127.0.0.1")) {
+                    attempts++
+                    v.postDelayed({ v.reload() }, 1000)
+                }
+            }
+        }
         web.webChromeClient = object : WebChromeClient() {
             override fun onShowFileChooser(
                 v: WebView, cb: ValueCallback<Array<Uri>>, p: FileChooserParams
@@ -51,21 +80,6 @@ class MainActivity : Activity() {
             }
         }
         setContentView(web)
-        // Серверу нужно 3–10 с (распаковка состояния из assets + импорт
-        // модулей). WebView перезагружает страницу до победного, максимум
-        // ~30 попыток с интервалом 1 с; если сервер так и не поднялся —
-        // аварийный экран android_host покажет traceback.
-        web.webViewClient = object : WebViewClient() {
-            private var attempts = 0
-            override fun onReceivedError(
-                v: WebView, code: Int, desc: String, url: String
-            ) {
-                if (attempts < 30 && url.contains("127.0.0.1")) {
-                    attempts++
-                    v.postDelayed({ v.reload() }, 1000)
-                }
-            }
-        }
         web.loadUrl("http://127.0.0.1:$PORT")
     }
 
@@ -76,14 +90,6 @@ class MainActivity : Activity() {
                 WebChromeClient.FileChooserParams.parseResult(res, data))
             fileCallback = null
         }
-    }
-
-    private fun showError(msg: String) {
-        android.app.AlertDialog.Builder(this)
-            .setTitle("FlyBrain: ошибка запуска")
-            .setMessage(msg + "\n\nДетали будут на экране приложения.")
-            .setPositiveButton("OK", null)
-            .show()
     }
 
     override fun onDestroy() {
