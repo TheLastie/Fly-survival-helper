@@ -109,6 +109,7 @@ async function search() {
   const r = new FileReader();
   r.onload = () => api('/api/recognize', {b64: r.result.split(',')[1], name: f.name})
     .then(d => {
+      if (d.error) { $('rec_out').innerHTML = '<span class="meta">' + esc(d.error) + '</span>'; return; }
       if (d.certain) {
         $('rec_out').innerHTML = '<b style="color:var(--ok)">' + esc(d.verdict) +
           '</b> <span class="meta">(' + d.matches[0].cos + ')</span><br>' +
@@ -131,8 +132,11 @@ loadSpecies();
 loadSources();
 }
 async function fb(sign, idx) {
-  const r = await api('/api/feedback', {sign, idx});
-  $('stat').textContent = (sign>0?'подтверждено':'стёрто') + ' · ' + (r.fam!=null?('знакомость '+r.fam.toFixed(2)):'');
+  try {
+    const r = await api('/api/feedback', {sign, idx});
+    if (r.error) { $('stat').textContent = 'ОШИБКА: ' + r.error; return; }
+    $('stat').textContent = (sign>0?'подтверждено':'стёрто') + ' · ' + (r.fam!=null?('знакомость '+r.fam.toFixed(2)):'');
+  } catch (e) { $('stat').textContent = 'СЕТЬ: ' + e; }
 }
 async function loadSources() {
   const d = await api('/api/sources');
@@ -217,14 +221,19 @@ class Handler(BaseHTTPRequestHandler):
             return self._send({"error": "bad json"}, 400)
         sys_ = Handler.system
         if u.path == "/api/feedback":
-            from memory import Candidate
-            idx = int(body.get("idx", -1))
-            cand = None
-            if 0 <= idx < len(sys_.memory):
-                cand = Candidate(idx, sys_.memory.texts[idx], 0.0, 0.5)
-            st = sys_.feedback(float(body.get("sign", 1)), cand=cand)
-            return self._send({"ok": st is not None,
-                               "fam": st["familiarity_after"] if st else None})
+            try:
+                from memory import Candidate
+                idx = int(body.get("idx", -1))
+                cand = None
+                if 0 <= idx < len(sys_.memory):
+                    cand = Candidate(idx, sys_.memory.texts[idx], 0.0, 0.5)
+                st = sys_.feedback(float(body.get("sign", 1)), cand=cand)
+                return self._send({"ok": st is not None,
+                                   "fam": st["familiarity_after"] if st else None})
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                return self._send({"ok": False, "error": str(e)})
         if u.path == "/api/recognize":
             import base64
             import tempfile

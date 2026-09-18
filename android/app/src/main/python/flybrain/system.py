@@ -417,10 +417,14 @@ class FlySystem:
         return stats
 
     def _img_embedder(self):
+        """None — если ни один бэкенд недоступен (APK v1 без onnxruntime)."""
         if self._image_embedder is None:
-            from image_embedder import ImageEmbedder
-            self._image_embedder = ImageEmbedder()
-        return self._image_embedder
+            try:
+                from image_embedder import ImageEmbedder
+                self._image_embedder = ImageEmbedder()
+            except RuntimeError:
+                self._image_embedder = False
+        return self._image_embedder or None
 
     def index_species(self, root: str) -> dict:
         """База видов: root/<Вид>/card.md (текст) + *.jpg/png (экземпляры).
@@ -468,8 +472,11 @@ class FlySystem:
                     self._img_hashes.add(h)
                     uniq.append(p)
             imgs = uniq
+            _emb = self._img_embedder()
+            if imgs and _emb is None:
+                imgs = []  # зрение недоступно: карточки индексируются, фото — нет
             if imgs:
-                embs = self._img_embedder().embed_batch(imgs)
+                embs = _emb.embed_batch(imgs)
                 for p, x in zip(imgs, embs):
                     meta = {"source": os.path.abspath(p), "species": species,
                             "kind": "image"}
@@ -495,9 +502,18 @@ class FlySystem:
         БЕЗОПАСНОСТЬ: при cos < threshold вердикт None ("не уверен —
         не употребляй"); для ядовитых видов совет предваряется предупреждением.
         """
+        if self._img_embedder() is None:
+            return {"query": image_path, "certain": False, "verdict": None,
+                    "error": "зрение недоступно в этой сборке (нет onnxruntime)",
+                    "matches": []}
         if threshold is None:
             threshold = self.cfg.recognize_threshold
-        q = self._img_embedder().embed_image_tta(image_path)
+        try:
+            q = self._img_embedder().embed_image_tta(image_path)
+        except Exception as e:
+            return {"query": image_path, "certain": False, "verdict": None,
+                    "error": f"зрение временно недоступно: {e}",
+                    "matches": []}
         hits = self.store.search_dense(q, 60)
         cands = []
         for idx, cos in hits:
@@ -643,6 +659,8 @@ class FlySystem:
             json.dump({str(k): v for k, v in self.doc_feedback.items()}, f)
         with open(os.path.join(path, "corrections.json"), "w", encoding="utf-8") as f:
             json.dump(self.corrections, f, ensure_ascii=False)
+        with open(os.path.join(path, "species_info.json"), "w", encoding="utf-8") as f:
+            json.dump(self.species_info, f, ensure_ascii=False)
         with open(os.path.join(path, "config.json"), "w", encoding="utf-8") as f:
             json.dump({k: v for k, v in self.cfg.__dict__.items()}, f, ensure_ascii=False)
 
@@ -679,6 +697,10 @@ class FlySystem:
             with open(cn, encoding="utf-8") as f:
                 self.corrections = {k: [int(i) for i in v]
                                     for k, v in json.load(f).items()}
+        sin = os.path.join(path, "species_info.json")
+        if os.path.exists(sin):
+            with open(sin, encoding="utf-8") as f:
+                self.species_info = json.load(f)
         self.memory = MemoryTable()
         for i, text in enumerate(self.store.texts):
             self.memory.store(text, self.store.vecs[i].astype(np.float32),
