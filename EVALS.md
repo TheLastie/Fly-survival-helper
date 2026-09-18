@@ -358,3 +358,14 @@ doctor.py — однокомандная диагностика (модель, �
 phone_field_state: 4027 документов, 3655 фото, 117 видов, 10.8 МБ —
 телефон копирует и загружает за секунды вместо индексации.
 Батарея 66/66.
+
+## APK собран в CI (GitHub Actions) — 43 МБ, 4 итерации
+
+github.com/TheLastie/Fly-survival-helper → Actions → build-apk → success.
+Итерации дефектов: (1) setup-android action против cmdline-tools 16 ->
+убран, SDK из образа; (2) невалидный sourceSets в defaultConfig ->
+удалён; (3) Chaquopy 15 vs Gradle 9 (VersionNumber) -> пин Gradle 8.10;
+(4) onnxruntime отсутствует в chaquopy-индексе -> APK v1 текстовый режим,
+зрение деградирует без ошибок (карточки индексируются, recognize() честно
+сообщает). Проверено содержимое: Chaquopy, assets/state, ONNX-модель.
+app-debug.apk: /mnt/agents/output/app-debug.apk
