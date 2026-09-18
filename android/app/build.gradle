@@ -40,8 +40,6 @@ android {
             signingConfig signingConfigs.debug
         }
     }
-}
-
 // Уровни приложения:
 //   lite     — текстовый поиск, без зрения (наименьший вес, слабые телефоны)
 //   standard — + распознавание по фото (ONNX) — рекомендуемый
@@ -61,6 +59,8 @@ productFlavors {
         applicationIdSuffix ".full"
         versionNameSuffix "-full"
     }
+}
+
 }
 
 dependencies {
