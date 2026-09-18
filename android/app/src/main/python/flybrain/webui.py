@@ -144,6 +144,16 @@ async function search() {
     });
   r.readAsDataURL(f);
 });
+async function loadHealth() {
+  try {
+    const d = await api('/api/health');
+    $('species').innerHTML = '<div class="src">документов: ' + d.n_docs +
+      ' | фото: ' + d.n_img + ' | видов: ' + d.n_species + '</div>' +
+      '<div class="src">manifest базы: ' + d.state_manifest + '</div>' +
+      (d.state_files.length ? '<div class="src">файлов состояния: ' + d.state_files.length + '</div>' : '<div class="src" style="color:var(--bad)">состояние ПУСТО</div>');
+  } catch (e) { $('species').innerHTML = '<div class="src">health: ' + esc('' + e) + '</div>'; }
+}
+loadHealth();
 async function loadSpecies() {
   const d = await api('/api/species');
   $('species').innerHTML = Object.entries(d).map(([s, v]) =>
@@ -247,6 +257,21 @@ class Handler(BaseHTTPRequestHandler):
             return
         if u.path == "/api/sources":
             return self._send(Handler.system.memory.sources())
+        if u.path == "/api/health":
+            import os as _os
+            sys_ = Handler.system
+            files_dir = getattr(Handler, "files_dir", "")
+            st_dir = _os.path.join(files_dir, "state") if files_dir else ""
+            return self._send({
+                "n_docs": len(sys_.memory),
+                "n_img": sum(1 for m in sys_.memory.meta
+                            if m and m.get("kind") == "image"),
+                "n_species": len(sys_.species_info),
+                "state_manifest": bool(st_dir) and _os.path.exists(
+                    _os.path.join(st_dir, "manifest.json")),
+                "state_files": sorted(_os.listdir(st_dir))[:15] if (
+                    st_dir and _os.path.isdir(st_dir)) else [],
+            })
         if u.path == "/api/species":
             sys_ = Handler.system
             counts: dict = {}

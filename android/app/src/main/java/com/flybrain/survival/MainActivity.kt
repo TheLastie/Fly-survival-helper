@@ -75,7 +75,13 @@ class MainActivity : Activity() {
                     }
                 }
             }
-        } catch (_: Exception) { }
+            if (!java.io.File(stateDir, "manifest.json").exists()) {
+                throw java.lang.Exception("копирование state не дало manifest.json")
+            }
+        } catch (t: Throwable) {
+            status?.post { showFatal("Копия базы: " + t.message, t) }
+            return
+        }
 
         // Python-рантайм в фоновом потоке: UI не блокируется, нет ANR.
         // Бисекция завершена: экран жив -> краш был отсутствующим Kotlin-

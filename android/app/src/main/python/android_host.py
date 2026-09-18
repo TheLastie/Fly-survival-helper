@@ -135,6 +135,7 @@ def _start_inner(files_dir):
 
     import webui
     webui.Handler.system = _sys
+    webui.Handler.files_dir = files_dir
     webui.PHOTO_DIR = os.path.join(files_dir, "species_photos")
     from http.server import ThreadingHTTPServer
     _server = ThreadingHTTPServer(("127.0.0.1", 8321), webui.Handler)
