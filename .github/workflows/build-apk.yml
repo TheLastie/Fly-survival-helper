@@ -18,14 +18,12 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: SDK + platform-tools
-        uses: android-actions/setup-android@v3
-
-      - name: Принять лицензии SDK
-        run: yes | sdkmanager --licenses > /dev/null
-
-      - name: Платформа android-34
-        run: sdkmanager "platforms;android-34" "build-tools;34.0.0"
+      # ubuntu-latest уже содержит полный Android SDK (ANDROID_HOME);
+      # setup-android action больше не нужен (ломается на cmdline-tools 16)
+      - name: Лицензии + платформа 34
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0"
 
       - name: Собрать debug APK
         run: cd android && chmod +x gradlew 2>/dev/null; ./gradlew assembleDebug --stacktrace
