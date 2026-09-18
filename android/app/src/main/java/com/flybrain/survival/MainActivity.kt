@@ -56,6 +56,15 @@ class MainActivity : Activity() {
                 }
                 copyRec("state", stateDir)
             }
+            // ONNX-модель тоже распаковываем: OrtSession нужен ФАЙЛ, assets — не файл
+            val modelsDir = java.io.File(filesDir, "models")
+            val onnxOut = java.io.File(modelsDir, "mobilenet_v3_small.onnx")
+            if (!onnxOut.exists()) {
+                modelsDir.mkdirs()
+                assets.open("models/mobilenet_v3_small.onnx").use { input ->
+                    java.io.FileOutputStream(onnxOut).use { output -> input.copyTo(output) }
+                }
+            }
         } catch (_: Exception) { }
 
         // Python-рантайм в фоновом потоке: UI не блокируется, нет ANR.

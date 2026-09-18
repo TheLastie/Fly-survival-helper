@@ -93,6 +93,8 @@ def start(files_dir):
 
 
 def _start_inner(files_dir):
+    os.environ.setdefault("FLYBRAIN_MODELS_DIR",
+                          os.path.join(files_dir, "models"))
     proj = os.path.dirname(os.path.abspath(__file__))
     for p in (proj, os.path.join(proj, "flybrain")):
         if p not in sys.path:

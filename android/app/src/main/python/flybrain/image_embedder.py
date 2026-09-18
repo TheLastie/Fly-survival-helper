@@ -91,7 +91,9 @@ class ImageEmbedder:
             return
         # приоритет 1: ONNX (мобильный путь: onnxruntime, 3.7 МБ, без torch)
         here = os.path.dirname(os.path.abspath(__file__))
-        onnx_path = os.path.join(here, "models", "mobilenet_v3_small.onnx")
+        onnx_path = os.path.join(
+            os.environ.get("FLYBRAIN_MODELS_DIR", os.path.join(here, "models")),
+            "mobilenet_v3_small.onnx")
         if os.path.exists(onnx_path):
             try:
                 import onnxruntime as ort

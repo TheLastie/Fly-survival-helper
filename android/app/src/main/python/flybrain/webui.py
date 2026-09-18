@@ -96,8 +96,8 @@ async function search() {
     '<div class="meta"><span class="badge">conf ' + Math.round(c.conf*100) + '%</span>' +
     '<span class="badge">' + d.zone + '</span>' + esc(c.citation) + '</div>' +
     '<div style="margin-top:6px">' +
-    '<button class="fb" onclick="fb(1,'+c.idx+')">верно</button>' +
-    '<button class="fb" onclick="fb(-1,'+c.idx+')">забудь</button>' +
+    '<button class="fb" onclick="fb(1,'+c.idx+',this)">верно</button>' +
+    '<button class="fb" onclick="fb(-1,'+c.idx+',this)">забудь</button>' +
     '</div></div>').join('') ||
     '<div class="res unknown"><div class="answer">не помню ничего похожего.</div>' +
     '<div class="meta">знакомость ' + d.familiarity.toFixed(2) + '</div></div>';
@@ -105,10 +105,23 @@ async function search() {
   $('photo').addEventListener('change', e => {
   const f = e.target.files[0];
   if (!f) return;
-  $('rec_out').innerHTML = '<span class="meta">распознаю…</span>';
   const r = new FileReader();
-  r.onload = () => api('/api/recognize', {b64: r.result.split(',')[1], name: f.name})
+  r.onload = () => {
+    // превью снимка — пользователь видит, ЧТО распознавалось
+    $('rec_out').innerHTML = '<img src="' + r.result + '" style="max-width:100%;border-radius:8px"><div class="meta" style="margin-top:4px">распознаю…</div>';
+    api('/api/recognize', {b64: r.result.split(',')[1], name: f.name})
     .then(d => {
+      const head = '<img src="' + r.result + '" style="max-width:100%;border-radius:8px"><div style="margin-top:6px">';
+      const tail = '</div>';
+      if (d.error) { $('rec_out').innerHTML = head + '<span class="meta">' + esc(d.error) + '</span>' + tail; return; }
+      if (d.certain) {
+        $('rec_out').innerHTML = head + '<b style="color:var(--ok)">' + esc(d.verdict) + '</b> <span class="meta">(' + d.matches[0].cos + ')</span><br>' + esc((d.advice || '').slice(0, 400)) + tail;
+      } else {
+        $('rec_out').innerHTML = head + '<b style="color:var(--bad)">НЕ УВЕРЕН</b><br><span class="meta">не употребляй в пищу</span>' + d.matches.map(m => '<br>похоже: ' + esc(m.species) + ' (' + m.cos + ')').join('') + tail;
+      }
+    });
+  };
+  if (false) api('/api/recognize', {b64: '', name: ''}).then(d => {
       if (d.error) { $('rec_out').innerHTML = '<span class="meta">' + esc(d.error) + '</span>'; return; }
       if (d.certain) {
         $('rec_out').innerHTML = '<b style="color:var(--ok)">' + esc(d.verdict) +
@@ -131,7 +144,8 @@ async function loadSpecies() {
 loadSpecies();
 loadSources();
 }
-async function fb(sign, idx) {
+async function fb(sign, idx, el) {
+  if (el) { el.disabled = true; el.textContent = sign>0 ? '✓ учтено' : '✖ забыто'; }
   try {
     const r = await api('/api/feedback', {sign, idx});
     if (r.error) { $('stat').textContent = 'ОШИБКА: ' + r.error; return; }
