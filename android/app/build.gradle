@@ -22,9 +22,21 @@ android {
             }
         }
     }
+    signingConfigs {
+        // фиксированная debug-подпись в репо: все CI-сборки совместимы
+        // по подписи, установка поверх старой версии работает
+        debug {
+            storeFile file("debug.keystore")
+            storePassword "flybrain123"
+            keyAlias "flybrain"
+            keyPassword "flybrain123"
+        }
+    }
     buildTypes {
+        debug { signingConfig signingConfigs.debug }
         release {
             minifyEnabled false
+            signingConfig signingConfigs.debug
         }
     }
 }
