@@ -417,10 +417,14 @@ class FlySystem:
         return stats
 
     def _img_embedder(self):
+        """None — если ни один бэкенд недоступен (APK v1 без onnxruntime)."""
         if self._image_embedder is None:
-            from image_embedder import ImageEmbedder
-            self._image_embedder = ImageEmbedder()
-        return self._image_embedder
+            try:
+                from image_embedder import ImageEmbedder
+                self._image_embedder = ImageEmbedder()
+            except RuntimeError:
+                self._image_embedder = False
+        return self._image_embedder or None
 
     def index_species(self, root: str) -> dict:
         """База видов: root/<Вид>/card.md (текст) + *.jpg/png (экземпляры).
@@ -468,8 +472,11 @@ class FlySystem:
                     self._img_hashes.add(h)
                     uniq.append(p)
             imgs = uniq
+            _emb = self._img_embedder()
+            if imgs and _emb is None:
+                imgs = []  # зрение недоступно: карточки индексируются, фото — нет
             if imgs:
-                embs = self._img_embedder().embed_batch(imgs)
+                embs = _emb.embed_batch(imgs)
                 for p, x in zip(imgs, embs):
                     meta = {"source": os.path.abspath(p), "species": species,
                             "kind": "image"}
@@ -495,6 +502,10 @@ class FlySystem:
         БЕЗОПАСНОСТЬ: при cos < threshold вердикт None ("не уверен —
         не употребляй"); для ядовитых видов совет предваряется предупреждением.
         """
+        if self._img_embedder() is None:
+            return {"query": image_path, "certain": False, "verdict": None,
+                    "error": "зрение недоступно в этой сборке (нет onnxruntime)",
+                    "matches": []}
         if threshold is None:
             threshold = self.cfg.recognize_threshold
         q = self._img_embedder().embed_image_tta(image_path)

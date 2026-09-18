@@ -17,9 +17,8 @@ android {
             pip {
                 install "numpy"
                 install "pillow"
-                // onnxruntime: если chaquopy-индекс его не отдаст, см.
-                // README_ANDROID.md — вариант B (нативный AAR через pyjnius)
-                install "onnxruntime"
+                // onnxruntime в chaquopy-индексе отсутствует (android-колесо):
+                // APK v1 — текстовый режим; зрение — вариант B из README_ANDROID.md
             }
         }
     }

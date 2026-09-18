@@ -109,6 +109,7 @@ async function search() {
   const r = new FileReader();
   r.onload = () => api('/api/recognize', {b64: r.result.split(',')[1], name: f.name})
     .then(d => {
+      if (d.error) { $('rec_out').innerHTML = '<span class="meta">' + esc(d.error) + '</span>'; return; }
       if (d.certain) {
         $('rec_out').innerHTML = '<b style="color:var(--ok)">' + esc(d.verdict) +
           '</b> <span class="meta">(' + d.matches[0].cos + ')</span><br>' +

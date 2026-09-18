@@ -78,9 +78,9 @@ class ImageEmbedder:
             import torch
             from torchvision.models import (mobilenet_v3_small,
                                             MobileNet_V3_Small_Weights)
-        except ImportError as e:
+        except ImportError:
             raise RuntimeError(
-                "нужен onnxruntime (models/*.onnx) или torch/torchvision") from e
+                "зрение недоступно: установите onnxruntime или torch")
         w = MobileNet_V3_Small_Weights.DEFAULT
         # оффлайн-упаковка: веса рядом с проектом имеют приоритет
         local = os.path.join(os.path.dirname(os.path.abspath(__file__)),
