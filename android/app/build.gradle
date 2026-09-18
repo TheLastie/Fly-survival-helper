@@ -53,5 +53,6 @@ androidComponents {
 dependencies {
     // зрение в APK: нативный onnxruntime-android (мост через pyjnius,
     // см. image_embedder._run_jni). Базы видов — в app/src/main/assets/state/.
-    implementation "com.microsoft.onnxruntime:onnxruntime-android:1.30.0"
+    // BISECT B1: отключён
+    // implementation "com.microsoft.onnxruntime:onnxruntime-android:1.30.0"
 }

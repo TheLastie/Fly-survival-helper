@@ -37,18 +37,9 @@ class MainActivity : Activity() {
         lay.addView(status)
         setContentView(lay)
 
-        // Python-рантайм в фоновом потоке: UI не блокируется, нет ANR
-        Thread {
-            try {
-                if (!Python.isStarted()) Python.start(AndroidPlatform(this))
-                status?.post { status?.text = "индексация и старт сервера…" }
-                Python.getInstance().getModule("android_host")
-                    .callAttr("start", filesDir.absolutePath)
-                status?.post { showWeb() }
-            } catch (t: Throwable) {
-                status?.post { showFatal("Chaquopy/Python: " + t.message, t) }
-            }
-        }.start()
+        // BISECT B1: Python и веб отключены. Экран с надписью B1 = сборка
+        // жива; падение = проблема в конфигурации, а не в Python.
+        status?.postDelayed({ status?.text = "B1 OK: экран жив" }, 4000)
     }
 
     // Экран ошибки с кнопкой «отправить лог»: трейсбэк улетает в мессенджер
