@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.view.Gravity
+import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.webkit.ValueCallback
@@ -24,7 +25,6 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Экран загрузки: убирает и ANR, и «белый экран = краш»
         val lay = LinearLayout(this)
         lay.orientation = LinearLayout.VERTICAL
         lay.gravity = Gravity.CENTER
@@ -37,7 +37,7 @@ class MainActivity : Activity() {
         lay.addView(status)
         setContentView(lay)
 
-        // Python-рантайм — в ФОНОВОМ потоке: UI не блокируется, нет ANR
+        // Python-рантайм в фоновом потоке: UI не блокируется, нет ANR
         Thread {
             try {
                 if (!Python.isStarted()) Python.start(AndroidPlatform(this))
@@ -46,12 +46,39 @@ class MainActivity : Activity() {
                     .callAttr("start", filesDir.absolutePath)
                 status?.post { showWeb() }
             } catch (t: Throwable) {
-                status?.post {
-                    status?.text = ("Ошибка запуска: " + t.message
-                        + "\n\nДетали — на экране приложения.")
-                }
+                status?.post { showFatal("Chaquopy/Python: " + t.message, t) }
             }
         }.start()
+    }
+
+    // Экран ошибки с кнопкой «отправить лог»: трейсбэк улетает в мессенджер
+    // одним нажатием — компьютер и adb не нужны.
+    private fun showFatal(where: String, t: Throwable) {
+        val log = java.io.File(filesDir, "crash.log")
+        val details = if (log.exists()) log.readText() else t.stackTraceToString()
+        val full = "$where\n\n$details"
+        val lay = LinearLayout(this)
+        lay.orientation = LinearLayout.VERTICAL
+        lay.gravity = Gravity.CENTER
+        lay.setBackgroundColor(Color.rgb(20, 23, 28))
+        val tv = TextView(this)
+        tv.text = "FlyBrain: ошибка запуска\n\n$where\n\n(полный лог — по кнопке ниже)"
+        tv.setTextColor(Color.rgb(223, 229, 236))
+        tv.textSize = 15f
+        tv.gravity = Gravity.CENTER
+        lay.addView(tv)
+        val btn = Button(this)
+        btn.text = "Отправить лог"
+        btn.setOnClickListener {
+            val send = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_SUBJECT, "FlySurvival crash log")
+                putExtra(Intent.EXTRA_TEXT, full.take(8000))
+            }
+            startActivity(Intent.createChooser(send, "Отправить лог"))
+        }
+        lay.addView(btn)
+        setContentView(lay)
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -59,7 +86,6 @@ class MainActivity : Activity() {
         val web = WebView(this)
         web.settings.javaScriptEnabled = true
         web.settings.allowFileAccess = false
-        // Сервер уже поднят, но перестрахуемся: retry до 30 раз
         web.webViewClient = object : WebViewClient() {
             private var attempts = 0
             override fun onReceivedError(v: WebView, code: Int, desc: String, url: String) {
