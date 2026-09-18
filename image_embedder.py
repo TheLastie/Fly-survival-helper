@@ -33,8 +33,14 @@ class ImageEmbedder:
         return q.astype(np.float32)
 
     def _run_jni(self, arr_nchw: np.ndarray) -> np.ndarray:
-        """Инференс через onnxruntime-android Java API (pyjnius).
-        arr: (1,3,224,224) float32 -> (576,) features."""
+        """Инференс через onnxruntime-android Java API (chaquopy-мост).
+        Любая ошибка JNI -> RuntimeError (деградация, не краш)."""
+        try:
+            return self._run_jni_inner(arr_nchw)
+        except Exception as e:
+            raise RuntimeError(f"JNI-инференс недоступен: {e}")
+
+    def _run_jni_inner(self, arr_nchw: np.ndarray) -> np.ndarray:
         try:
             from jnius import autoclass
         except ImportError:
@@ -53,10 +59,9 @@ class ImageEmbedder:
         res = self._ort_sess.run(inputs)
         out = res.get(0).getValue()          # FloatBuffer
         n = out.remaining()
-        import jnius
         result = np.empty(n, dtype=np.float32)
         for i in range(n):
-            result[i] = arr.get(i)
+            result[i] = out.get(i)           # читаем ВЫХОД, не вход
         return result
 
     # ---------- препроцессинг (PIL + numpy, без torch) ----------

@@ -508,7 +508,12 @@ class FlySystem:
                     "matches": []}
         if threshold is None:
             threshold = self.cfg.recognize_threshold
-        q = self._img_embedder().embed_image_tta(image_path)
+        try:
+            q = self._img_embedder().embed_image_tta(image_path)
+        except Exception as e:
+            return {"query": image_path, "certain": False, "verdict": None,
+                    "error": f"зрение временно недоступно: {e}",
+                    "matches": []}
         hits = self.store.search_dense(q, 60)
         cands = []
         for idx, cos in hits:
