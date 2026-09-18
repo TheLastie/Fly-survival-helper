@@ -26,7 +26,7 @@ jobs:
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0"
 
       - name: Собрать debug APK
-        run: cd android && chmod +x gradlew 2>/dev/null; ./gradlew assembleDebug --stacktrace
+        run: cd android && gradle assembleDebug --stacktrace
 
       - name: Выложить APK как артефакт
         uses: actions/upload-artifact@v4

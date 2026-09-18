@@ -22,7 +22,6 @@ android {
                 install "onnxruntime"
             }
         }
-        sourceSets { main { python.srcDir "src/main/python" } }
     }
     buildTypes {
         release {
