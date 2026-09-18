@@ -6,6 +6,10 @@ plugins {
 android {
     namespace 'com.flybrain.survival'
     compileSdk 34
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
     defaultConfig {
         applicationId "com.flybrain.survival"
         minSdk 24
