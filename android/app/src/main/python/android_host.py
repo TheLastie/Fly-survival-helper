@@ -10,6 +10,7 @@ LLM (опционально): если рядом с файлами прилож
 """
 import os
 import shutil
+import sys
 import threading
 
 _server = None
