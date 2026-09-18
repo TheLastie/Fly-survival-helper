@@ -16,18 +16,21 @@ HTML = """<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Мозг мухи — поиск</title>
 <style>
   :root { --bg:#14171c; --panel:#1c2129; --fg:#dfe5ec; --dim:#8b95a3;
           --acc:#5ec1ff; --ok:#7ddb8a; --warn:#e8c05a; --bad:#e87d7d; }
   * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust:100%; }
   body { margin:0; background:var(--bg); color:var(--fg);
-         font:15px/1.5 system-ui,sans-serif; display:flex; min-height:100vh; }
-  #side { width:250px; padding:16px; background:var(--panel); flex-shrink:0; }
-  #side h2 { font-size:13px; color:var(--dim); text-transform:uppercase; }
-  #main { flex:1; padding:24px 32px; max-width:900px; }
+         font:17px/1.55 system-ui,sans-serif; display:flex; flex-direction:column;
+         min-height:100vh; }
+  #side { padding:14px 16px; background:var(--panel); order:2; }
+  #side h2 { font-size:14px; color:var(--dim); text-transform:uppercase; margin:10px 0 4px; }
+  #main { flex:1; padding:16px; order:1; width:100%; box-sizing:border-box; }
   h1 { font-size:20px; } h1 small { color:var(--dim); font-weight:normal; }
-  #q { width:100%; padding:12px 14px; font-size:16px; border-radius:8px;
+  #q { width:100%; box-sizing:border-box; padding:14px 16px; font-size:18px; border-radius:10px;
        border:1px solid #333a45; background:#0e1116; color:var(--fg); }
   #q:focus { outline:none; border-color:var(--acc); }
   .res { background:var(--panel); border-radius:10px; padding:14px 16px;
@@ -38,9 +41,10 @@ HTML = """<!DOCTYPE html>
   .meta { color:var(--dim); font-size:12px; margin-top:8px; }
   .badge { display:inline-block; padding:1px 8px; border-radius:10px;
            font-size:12px; background:#2a3340; margin-right:6px; }
-  .answer { font-size:17px; margin-bottom:4px; }
-  button.fb { background:#2a3340; color:var(--fg); border:none; border-radius:6px;
-              padding:4px 10px; margin-right:6px; cursor:pointer; font-size:13px; }
+  .answer { font-size:18px; margin-bottom:6px; }
+  button.fb { background:#2a3340; color:var(--fg); border:none; border-radius:8px;
+              padding:12px 22px; margin:4px 8px 0 0; cursor:pointer; font-size:16px;
+              min-height:44px; touch-action:manipulation; }
   button.fb:hover { background:#37414f; }
   #extracted { background:#12303f; border:1px solid #1d5a75; border-radius:8px;
                padding:10px 14px; margin:12px 0; }
@@ -185,6 +189,7 @@ class Handler(BaseHTTPRequestHandler):
             obj, ensure_ascii=False)).encode("utf-8")
         self.send_response(code)
         self.send_header("Content-Type", ctype)
+        self.send_header("Cache-Control", "no-store")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
