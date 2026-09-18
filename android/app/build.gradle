@@ -40,19 +40,13 @@ android {
             signingConfig signingConfigs.debug
         }
     }
-// Уровни приложения:
-//   lite     — текстовый поиск, без зрения (наименьший вес, слабые телефоны)
-//   standard — + распознавание по фото (ONNX) — рекомендуемый
-//   full     — + расширенная база (в будущем), ставится отдельно
+// Уровни приложения (два публичных):
+//   lite — ОСНОВНАЯ: поиск, карточки, советы (лёгкая, для всех)
+//   full — + нейросеть: распознавание растений/грибов по фото (ONNX)
 flavorDimensions "tier"
 productFlavors {
     lite {
-        dimension "tier"
-        applicationIdSuffix ".lite"
-        versionNameSuffix "-lite"
-    }
-    standard {
-        dimension "tier"
+        dimension "tier"          // основной пакет com.flybrain.survival
     }
     full {
         dimension "tier"
@@ -65,6 +59,5 @@ productFlavors {
 
 dependencies {
     // зрение: нативный onnxruntime-android только для standard/full
-    standardImplementation "com.microsoft.onnxruntime:onnxruntime-android:1.30.0"
     fullImplementation "com.microsoft.onnxruntime:onnxruntime-android:1.30.0"
 }

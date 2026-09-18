@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        flavor: [lite, standard]
+        flavor: [lite, full]
     steps:
       - uses: actions/checkout@v4
 
