@@ -108,10 +108,9 @@ def _start_inner(files_dir):
 
     state = _setup_state(files_dir)
     if state:
-        try:
-            _sys.load(state)
-        except Exception:
-            state = None
+        # ОШИБКА ЗАГРУЗКИ НЕ ГЛОТАЕМ: пустая база хуже красного экрана.
+        # Исключение уходит в crash-server -> traceback на экране телефона.
+        _sys.load(state)
     if not state:
         # запасной путь: индексация assets/dbs (если state не вшит)
         dbs = os.path.join(files_dir, "dbs")

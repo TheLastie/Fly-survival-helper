@@ -10,6 +10,9 @@ on:
 jobs:
   apk:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        flavor: [lite, standard]
     steps:
       - uses: actions/checkout@v4
 
@@ -30,11 +33,11 @@ jobs:
         with:
           gradle-version: "8.10"
 
-      - name: Собрать debug APK
-        run: cd android && gradle assembleDebug --stacktrace
+      - name: Собрать debug APK (${{ matrix.flavor }})
+        run: cd android && gradle assemble${{ matrix.flavor }}Debug --stacktrace
 
       - name: Выложить APK как артефакт
         uses: actions/upload-artifact@v4
         with:
-          name: flybrain-survival-debug
-          path: android/app/build/outputs/apk/debug/*.apk
+          name: flybrain-${{ matrix.flavor }}
+          path: android/app/build/outputs/apk/${{ matrix.flavor }}/debug/*.apk

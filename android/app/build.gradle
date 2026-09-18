@@ -42,8 +42,29 @@ android {
     }
 }
 
+// Уровни приложения:
+//   lite     — текстовый поиск, без зрения (наименьший вес, слабые телефоны)
+//   standard — + распознавание по фото (ONNX) — рекомендуемый
+//   full     — + расширенная база (в будущем), ставится отдельно
+flavorDimensions "tier"
+productFlavors {
+    lite {
+        dimension "tier"
+        applicationIdSuffix ".lite"
+        versionNameSuffix "-lite"
+    }
+    standard {
+        dimension "tier"
+    }
+    full {
+        dimension "tier"
+        applicationIdSuffix ".full"
+        versionNameSuffix "-full"
+    }
+}
+
 dependencies {
-    // зрение в APK: нативный onnxruntime-android (мост через встроенный
-    // java-мост Chaquopy, см. image_embedder._run_jni)
-    implementation "com.microsoft.onnxruntime:onnxruntime-android:1.30.0"
+    // зрение: нативный onnxruntime-android только для standard/full
+    standardImplementation "com.microsoft.onnxruntime:onnxruntime-android:1.30.0"
+    fullImplementation "com.microsoft.onnxruntime:onnxruntime-android:1.30.0"
 }
