@@ -32,7 +32,7 @@ class FlyConfig:
     # --- зоны уверенности ---
     theta_low: float = 0.40   # familiarity (статистика; гейт смотрит theta_conf)
     theta_conf: float = 0.35  # conf топ-1 ниже — «не помню» (калиброванная P(верно))
-    recognize_threshold: float = 0.55  # порог вердикта recognize (калибруется)
+    recognize_threshold: float = 0.75  # калибровано на 46 видов + OOD-пробах (см. EVALS)
     recognize_margin: float = 0.01  # мин. отрыв от другого вида для вердикта
     theta_mid: float = 0.75   # conf ниже — «кажется, но не уверен»
     delta_margin: float = 0.02  # запас топ-1 над топ-2 меньше — «неоднозначно»
